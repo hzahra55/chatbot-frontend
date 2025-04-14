@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SaaS Chatbot</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- For testing only, remove in production -->
+    <script>
+      window.onload = function() {
+        if(typeof initChatbot === 'function') {
+          initChatbot({
+            siteId: 'themarketinglads',
+            position: 'bottom-right',
+            primaryColor: '#4a69bd',
+            title: 'Chat with The Marketing Lads'
+          });
+        }
+      }
+    </script>
+  </body>
+</html>
