@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiMessageSquare, FiX, FiSend } from 'react-icons/fi';
 import { ChatbotConfig, Message } from '../types';
-import api from '../services/api';
+import { sendMessage } from '../services/api';
+const [stepId, setStepId] = useState("start");         // Tracks current step
+const [awaitingAI, setAwaitingAI] = useState(false);   // True when AI should handle free input
+import MessageBubble from './MessageBubble';
+
 
 interface ChatbotProps {
   config: ChatbotConfig;
@@ -43,47 +47,89 @@ const Chatbot: React.FC<ChatbotProps> = ({ config }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, config.siteId]);
   
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+//   const handleSendMessage = async () => {
+//     if (!inputValue.trim()) return;
     
-    // Create a new user message
+//     // Create a new user message
+//     const userMessage: Message = {
+//       id: Date.now().toString(),
+//       text: inputValue,
+//       sender: 'user',
+//       timestamp: new Date()
+//     };
+    
+//     // Add the user message to the chat
+//     setMessages([...messages, userMessage]);
+//     setInputValue('');
+//     setIsLoading(true);
+    
+//     try {
+//       // Call the API
+//       const response = await api.sendMessage(config.siteId, userMessage.text);
+      
+//       // Add the bot response
+//       const botMessage: Message = {
+//         id: (Date.now() + 1).toString(),
+//         text: response.response || "I'm sorry, I couldn't process your request.",
+//         sender: 'bot',
+//         timestamp: new Date()
+//       };
+      
+//       setMessages(prev => [...prev, botMessage]);
+//     } catch (error) {
+//       console.error('Error:', error);
+      
+//       // Add an error message
+//       const errorMessage: Message = {
+//         id: (Date.now() + 1).toString(),
+//         text: "Sorry, I'm having trouble connecting. Please try again later.",
+//         sender: 'bot',
+//         timestamp: new Date()
+//       };
+      
+//       setMessages(prev => [...prev, errorMessage]);
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+  
+const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
+  
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputValue,
       sender: 'user',
       timestamp: new Date()
     };
-    
-    // Add the user message to the chat
-    setMessages([...messages, userMessage]);
+  
+    setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
-    
+  
     try {
-      // Call the API
-      const response = await api.sendMessage(config.siteId, userMessage.text);
-      
-      // Add the bot response
+      const response = await sendMessage(config.siteId, inputValue, stepId, awaitingAI);
+  
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: response.response || "I'm sorry, I couldn't process your request.",
+        text: response.response,
         sender: 'bot',
         timestamp: new Date()
       };
-      
+  
       setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      console.error('Error:', error);
-      
-      // Add an error message
-      const errorMessage: Message = {
+  
+      // Update flow state
+      if (response.stepId) setStepId(response.stepId);
+      setAwaitingAI(response.awaitingAI || false);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: "Sorry, I'm having trouble connecting. Please try again later.",
+        text: "Sorry, something went wrong.",
         sender: 'bot',
         timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -220,10 +266,30 @@ const Chatbot: React.FC<ChatbotProps> = ({ config }) => {
             <FiX />
           </button>
         </div>
-        
-        {/* Message list */}
         <div style={messageListStyle}>
-          {messages.map((message) => (
+            {messages.map((msg) => (
+                <MessageBubble key={msg.id} message={msg} primaryColor={primaryColor} />
+            ))}
+
+            {isLoading && (
+                <MessageBubble
+                message={{
+                    id: 'typing',
+                    text: '...',
+                    sender: 'bot',
+                    timestamp: new Date()
+                }}
+                primaryColor={primaryColor}
+                />
+            )}
+
+            <div ref={messagesEndRef} />
+            </div>
+
+        {/* Message list */}
+        {/* <div style={messageListStyle}> */}
+
+          {/* {messages.map((message) => (
             <div
               key={message.id}
               style={{
@@ -239,8 +305,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ config }) => {
             >
               {message.text}
             </div>
-          ))}
+          ))} */}
           
+{/*           
           {isLoading && (
             <div
               style={{
@@ -293,9 +360,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ config }) => {
           )}
           
           {/* This div helps us scroll to the bottom */}
-          <div ref={messagesEndRef} />
+          {/* <div ref={messagesEndRef} />
         </div>
-        
+         */} 
         {/* Input area */}
         <div style={inputContainerStyle}>
           <input
