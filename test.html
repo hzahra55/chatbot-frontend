@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Chatbot Test</title>
+  </head>
+  <body>
+    <h1>Testing Chatbot Widget</h1>
+
+    <script>
+      function loadChatbot() {
+        const script = document.createElement("script");
+        script.src = "https://chatbot-frontend-pi-two.vercel.app/widget.js";
+        script.onload = function () {
+          window.initChatbot({
+            siteId: "themarketinglads",
+            position: "bottom-right",
+            title: "Talk to us",
+            primaryColor: "#4a69bd"
+          });
+        };
+        document.body.appendChild(script);
+      }
+
+      loadChatbot();
+    </script>
+  </body>
+</html>
